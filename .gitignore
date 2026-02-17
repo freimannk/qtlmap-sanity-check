@@ -1,0 +1,11 @@
+.nextflow*
+work/
+work_old/
+data/
+debug/
+*results*/
+.DS_Store
+testdata/
+singularity*/
+slurm-*.out
+trace*
