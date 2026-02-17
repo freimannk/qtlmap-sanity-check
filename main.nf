@@ -6,17 +6,18 @@ process check_pqs {
     container = 'quay.io/kfkf33/duckdb_env'
 
     input:
+    path scanned_dir
 
     output:
     path("${params.corrupted_parquets_output}.txt")
 
     script:
     """
-    check_pqs.py -d ${params.scanned_dir} -o ${params.corrupted_parquets_output}
+    check_pqs.py -d ${scanned_dir} -o ${params.corrupted_parquets_output}
     """
 }
 
 workflow {
-    check_pqs()
+    check_pqs( file(params.scanned_dir) )
 }
 
