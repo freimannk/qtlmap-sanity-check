@@ -1,0 +1,1 @@
+# qtlmap-sanity-check
