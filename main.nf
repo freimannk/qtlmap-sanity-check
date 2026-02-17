@@ -10,10 +10,12 @@ process check_pqs {
 
     output:
     path("${params.corrupted_parquets_output}.txt")
+    path("${params.corrupted_parquets_output}.log")
 
     script:
     """
     check_pqs.py -d ${scanned_dir} -o ${params.corrupted_parquets_output}
+    cp .command.log ${params.corrupted_parquets_output}.log
     """
 }
 
