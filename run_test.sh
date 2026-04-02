@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#SBATCH --time=02:00:00
+#SBATCH --time=06:30:00
 #SBATCH -N 1
 #SBATCH --ntasks-per-node=1
-#SBATCH --mem=1G
-#SBATCH --job-name="find_corrupted_files"
+#SBATCH --mem=5G
+#SBATCH --job-name="check_qtlmaps"
 #SBATCH --partition=amd
 
 
@@ -14,4 +14,6 @@ module load any/singularity/3.7.3
 module load squashfs/4.4
 
 
-nextflow run main.nf -profile tartu_hpc,test -resume
+#nextflow run main.nf -profile tartu_hpc -resume
+#nextflow run main.nf -profile tartu_hpc,test -resume
+nextflow run main.nf -profile tartu_hpc -resume --input /gpfs/helios/home/a82371/CHECK_QTLMAP_OUTPUTS/data/testdata/AFR_LCL.tsv --outdir AFR_LCL
