@@ -7,7 +7,6 @@ import os
 def concatenate_parquet_dir(input_dir, output_file, memory_limit, threads):
     memory_limit = f"{float(memory_limit) * 0.85:.1f}"
 
-    # DuckDB reads all parquet files in directory via glob
     query = f"""
         SET memory_limit='{memory_limit}GB';
         PRAGMA threads={threads};
@@ -34,7 +33,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Optional safety check
     if not os.path.isdir(args.input_dir):
         raise ValueError(f"Input directory does not exist: {args.input_dir}")
 

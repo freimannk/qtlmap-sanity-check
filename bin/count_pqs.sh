@@ -22,12 +22,10 @@ echo "Base dirs:"
 printf "  - %s\n" "${BASE_DIRS[@]}"
 echo ""
 
-#Loop over all base dirs
 for BASE_DIR in "${BASE_DIRS[@]}"; do
 
     SPEC_BASE_DIR="${BASE_DIR}/${SELECTED_FOLDER}"
 
-    # Skip if base doesn't exist
     if [ ! -d "$SPEC_BASE_DIR" ]; then
         echo "WARNING: Missing $SPEC_BASE_DIR"
         continue

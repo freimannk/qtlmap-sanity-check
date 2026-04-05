@@ -10,7 +10,6 @@ import argparse
 def query_cs(parquet_file, PIP_THRESHOLD):
     con = duckdb.connect()
 
-    # CS-level stats
     df_cs = con.execute(f"""
         SELECT 
             molecular_trait_id,
@@ -21,7 +20,6 @@ def query_cs(parquet_file, PIP_THRESHOLD):
         GROUP BY molecular_trait_id, cs_id
     """).fetchdf()
 
-    # Summary stats
     summary = con.execute(f"""
         SELECT
             COUNT(*) AS total_cs,
@@ -35,7 +33,6 @@ def query_cs(parquet_file, PIP_THRESHOLD):
         )
     """).fetchdf()
 
-    # CS per molecular_trait_id
     df_molecular_trait_id = con.execute(f"""
         SELECT 
             molecular_trait_id,

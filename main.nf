@@ -4,6 +4,7 @@ include {cp_data} from './workflows/cp_wf'
 include {credible_sets_stats} from './workflows/credible_set_stats_wf'
 include {validation} from './workflows/validation_wf'
 include {validation as publish_validation} from './workflows/validation_wf'
+include {calc_md5} from './workflows/calc_md5_wf'
 
 
 workflow check_qtlmap_output {
@@ -38,10 +39,9 @@ workflow publish_qtlmap_output {
     if (params.validation) {
         publish_validation(validation_input_ch, "publish")
     }
-
-    // if (params.calculate_md5sums) {
-    //     calculate_md5sums(validation_input_ch)
-    // }
+    if (params.calculate_md5sums) {
+        calc_md5(validation_input_ch)
+    }
     }
         
 

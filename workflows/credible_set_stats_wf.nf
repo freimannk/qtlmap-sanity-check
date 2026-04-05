@@ -5,11 +5,13 @@ nextflow.enable.dsl=2
 // Header log info
 log.info """=========================================="""
 def summary = [:]
-summary['Pipeline Name']        = 'Find trans-eQTL results'
+summary['Pipeline Name']        = 'Credible set stats generation pipiline'
 summary['Current home']         = "$HOME"
 summary['Current user']         = "$USER"
 summary['Current path']         = "$PWD"
 summary['Config Profile']       = workflow.profile
+summary["PIP threshold:"]       = params.pip_threshold
+
 
 if(params.email) summary['E-mail Address'] = params.email
 log.info summary.collect { k,v -> "${k.padRight(21)}: $v" }.join("\n")
