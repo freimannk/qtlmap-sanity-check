@@ -23,9 +23,9 @@ def query_cs(parquet_file, PIP_THRESHOLD):
     summary = con.execute(f"""
         SELECT
             COUNT(*) AS total_cs,
-            SUM(CASE WHEN max_pip > {PIP_THRESHOLD} THEN 1 ELSE 0 END) AS strong_cs,
-            SUM(CASE WHEN max_pip > 0.5 THEN 1 ELSE 0 END) AS medium_cs,
-            SUM(CASE WHEN max_pip <= 0.5 THEN 1 ELSE 0 END) AS weak_cs
+            SUM(CASE WHEN max_pip > {PIP_THRESHOLD} THEN 1 ELSE 0 END) AS cs_max_pip_above_threshold,
+            SUM(CASE WHEN max_pip > 0.5 AND max_pip <= {PIP_THRESHOLD} THEN 1 ELSE 0 END) AS cs_max_pip_between_0_5_and_threshold,
+            SUM(CASE WHEN max_pip <= 0.5 THEN 1 ELSE 0 END) AS cs_max_pip_at_or_below_0_5
         FROM (
             SELECT molecular_trait_id, cs_id, MAX(pip) AS max_pip
             FROM '{parquet_file}'
@@ -129,6 +129,9 @@ def main():
     parquet = args.parquet
     PIP_THRESHOLD = args.pip_threshold
 
+    if PIP_THRESHOLD <= 0.5 or PIP_THRESHOLD > 1:
+        raise ValueError("pip_threshold must be > 0.5 and <= 1 for strong/medium/weak bins.")
+    
     print(f"Processing dataset: {dataset_id}")
     print(f"Input file: {parquet}")
 
