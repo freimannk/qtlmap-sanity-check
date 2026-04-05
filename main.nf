@@ -35,6 +35,7 @@ workflow publish_qtlmap_output {
         }
 
     def validation_input_ch = params.copy_data ? cp_data(study_ch).cp_ch : study_ch
+    validation_input_ch.view { "VALIDATION_INPUT => $it" }
 
     if (params.validation) {
         publish_validation(validation_input_ch, "publish")
