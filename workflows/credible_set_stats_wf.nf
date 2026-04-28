@@ -58,5 +58,67 @@ workflow credible_sets_stats {
 
     cs_stats(dataset_ch)
 
+    cs_summary_by_study_ch = cs_stats.out.cs_summary
+    .map { study_id, dataset, tsv ->
+        tuple(study_id, dataset, tsv)
+    }
+    .groupTuple(by: 0)
+    .flatMap { study_id, datasets, tsvs ->
+        def out = []
+        for (int i = 0; i < tsvs.size(); i++) {
+            out << tuple(study_id, datasets[i], tsvs[i])
+        }
+        return out
+    }
+    .collectFile(
+        keepHeader: true,
+        skip: 1,
+        storeDir: "${params.outdir}/cs_stats"
+    ) { study_id, dataset, tsv ->
+        [ "${study_id}_cs_summary.tsv", tsv ]
+    }
+
+
+cs_size_stats_by_study_ch = cs_stats.out.cs_size_stats
+    .map { study_id, dataset, tsv ->
+        tuple(study_id, dataset, tsv)
+    }
+    .groupTuple(by: 0)
+    .flatMap { study_id, datasets, tsvs ->
+        def out = []
+        for (int i = 0; i < tsvs.size(); i++) {
+            out << tuple(study_id, datasets[i], tsvs[i])
+        }
+        return out
+    }
+    .collectFile(
+        keepHeader: true,
+        skip: 1,
+        storeDir: "${params.outdir}/cs_stats"
+    ) { study_id, dataset, tsv ->
+        [ "${study_id}_cs_size_stats_summary.tsv", tsv ]
+    }
+
+
+    cs_per_trait_stats_by_study_ch = cs_stats.out.cs_per_trait_stats
+    .map { study_id, dataset, tsv ->
+        tuple(study_id, dataset, tsv)
+    }
+    .groupTuple(by: 0)
+    .flatMap { study_id, datasets, tsvs ->
+        def out = []
+        for (int i = 0; i < tsvs.size(); i++) {
+            out << tuple(study_id, datasets[i], tsvs[i])
+        }
+        return out
+    }
+    .collectFile(
+        keepHeader: true,
+        skip: 1,
+        storeDir: "${params.outdir}/cs_stats"
+    ) { study_id, dataset, tsv ->
+        [ "${study_id}_cs_per_molecular_trait_id_stats_summary.tsv", tsv ]
+    }
+
 
 }

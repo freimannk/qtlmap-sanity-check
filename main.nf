@@ -5,6 +5,8 @@ include {credible_sets_stats} from './workflows/credible_set_stats_wf'
 include {validation} from './workflows/validation_wf'
 include {validation as publish_validation} from './workflows/validation_wf'
 include {calc_md5} from './workflows/calc_md5_wf'
+include {qtl_stats} from './workflows/qtl_stats_wf'
+
 
 
 workflow check_qtlmap_output {
@@ -19,6 +21,7 @@ workflow check_qtlmap_output {
 
     validation(study_ch, "output")
     credible_sets_stats(study_ch)
+    qtl_stats(study_ch)
     
 
 }

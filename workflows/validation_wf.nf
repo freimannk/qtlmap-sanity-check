@@ -19,6 +19,11 @@ include { count_subfolder_pqs as count_sumstats_all_pqs} from '../modules/valida
 include { count_subfolder_pqs as susie_batches_cs_pqs} from '../modules/validation'
 include { count_subfolder_pqs as susie_batches_full_pqs} from '../modules/validation'
 include { count_subfolder_pqs as susie_batches_lbf_pqs} from '../modules/validation'
+include { check_file_existance as check_sumstats_files_existance} from '../modules/validation'
+include { check_file_existance as check_susie_files_existance} from '../modules/validation'
+include {check_required_files as check_required_files_sumstats} from '../modules/validation'
+include {check_required_files as check_required_files_susie} from '../modules/validation'
+
 
 
 workflow {
@@ -39,6 +44,10 @@ workflow validation {
         susie_batches_cs_pqs(grouped_by_study_id_ch, "susie_batches", "cs")
         susie_batches_full_pqs(grouped_by_study_id_ch, "susie_batches", "full")
         susie_batches_lbf_pqs(grouped_by_study_id_ch, "susie_batches", "lbf")
+        check_sumstats_files_existance(grouped_by_study_id_ch, "sumstats")
+        check_susie_files_existance(grouped_by_study_id_ch, "susie")
+        check_required_files_sumstats(check_sumstats_files_existance.out)
+        check_required_files_susie(check_susie_files_existance.out)
     } else {
     grouped_by_study_id_ch = study_ch
             .groupTuple(by: 0)

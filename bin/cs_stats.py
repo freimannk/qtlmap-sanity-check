@@ -1,13 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+import argparse
 
 import duckdb
 import matplotlib.pyplot as plt
 import seaborn as sns
-import argparse
+import pandas as pd
 
 
-
-def query_cs(parquet_file, PIP_THRESHOLD):
+def query_cs(parquet_file, pip_threshold):
     con = duckdb.connect()
 
     df_cs = con.execute(f"""
@@ -23,9 +24,12 @@ def query_cs(parquet_file, PIP_THRESHOLD):
     summary = con.execute(f"""
         SELECT
             COUNT(*) AS total_cs,
-            SUM(CASE WHEN max_pip > {PIP_THRESHOLD} THEN 1 ELSE 0 END) AS cs_max_pip_above_threshold,
-            SUM(CASE WHEN max_pip > 0.5 AND max_pip <= {PIP_THRESHOLD} THEN 1 ELSE 0 END) AS cs_max_pip_between_0_5_and_threshold,
-            SUM(CASE WHEN max_pip <= 0.5 THEN 1 ELSE 0 END) AS cs_max_pip_at_or_below_0_5
+            COALESCE(SUM(CASE WHEN max_pip > {pip_threshold} THEN 1 ELSE 0 END), 0)
+                AS cs_max_pip_above_threshold,
+            COALESCE(SUM(CASE WHEN max_pip > 0.5 AND max_pip <= {pip_threshold} THEN 1 ELSE 0 END), 0)
+                AS cs_max_pip_between_0_5_and_threshold,
+            COALESCE(SUM(CASE WHEN max_pip <= 0.5 THEN 1 ELSE 0 END), 0)
+                AS cs_max_pip_at_or_below_0_5
         FROM (
             SELECT molecular_trait_id, cs_id, MAX(pip) AS max_pip
             FROM '{parquet_file}'
@@ -96,19 +100,50 @@ def plot_cs_per_molecular_trait_id(df_molecular_trait_id, out):
 # SAVE OUTPUTS
 # -------------------------
 
-def save_summary(summary, dataset_id, out):
-    summary["dataset_id"] = dataset_id
+def add_id_columns(df, study_id, dataset):
+    df = df.copy()
+    df.insert(0, "dataset", dataset)
+    df.insert(0, "study_id", study_id)
+    return df
+
+
+def describe_as_one_row(series, prefix):
+    stats = series.describe()
+
+    return {
+        f"{prefix}_count": stats.get("count", pd.NA),
+        f"{prefix}_mean": stats.get("mean", pd.NA),
+        f"{prefix}_std": stats.get("std", pd.NA),
+        f"{prefix}_min": stats.get("min", pd.NA),
+        f"{prefix}_q25": stats.get("25%", pd.NA),
+        f"{prefix}_median": stats.get("50%", pd.NA),
+        f"{prefix}_q75": stats.get("75%", pd.NA),
+        f"{prefix}_max": stats.get("max", pd.NA),
+    }
+
+
+def save_summary(summary, study_id, dataset, pip_threshold, out):
+    summary = summary.copy()
+    summary.insert(0, "pip_threshold", pip_threshold)
+    summary = add_id_columns(summary, study_id, dataset)
+
     summary.to_csv(f"{out}_summary.tsv", sep="\t", index=False)
 
 
-def save_cs_size_stats(df, out):
-    stats = df["snp_count"].describe()
-    stats.to_csv(f"{out}_cs_size_stats.tsv", sep="\t")
+def save_cs_size_stats(df_cs, study_id, dataset, out):
+    row = describe_as_one_row(df_cs["snp_count"], "cs_size")
+    stats_df = pd.DataFrame([row])
+    stats_df = add_id_columns(stats_df, study_id, dataset)
+
+    stats_df.to_csv(f"{out}_cs_size_stats.tsv", sep="\t", index=False)
 
 
-def save_molecular_trait_id_stats(df_molecular_trait_id, out):
-    stats = df_molecular_trait_id["n_cs"].describe()
-    stats.to_csv(f"{out}_cs_per_molecular_trait_id_stats.tsv", sep="\t")
+def save_molecular_trait_id_stats(df_molecular_trait_id, study_id, dataset, out):
+    row = describe_as_one_row(df_molecular_trait_id["n_cs"], "cs_per_molecular_trait")
+    stats_df = pd.DataFrame([row])
+    stats_df = add_id_columns(stats_df, study_id, dataset)
+
+    stats_df.to_csv(f"{out}_cs_per_molecular_trait_id_stats.tsv", sep="\t", index=False)
 
 
 # -------------------------
@@ -116,42 +151,47 @@ def save_molecular_trait_id_stats(df_molecular_trait_id, out):
 # -------------------------
 
 def main():
-    parser = argparse.ArgumentParser(description="Merge parquet files in a directory using DuckDB.")
+    parser = argparse.ArgumentParser(
+        description="Generate credible set statistics and plots from one parquet file."
+    )
 
-    parser.add_argument("-d", "--dataset", required=True, help="dataset_id")
-    parser.add_argument("-p", "--parquet", required=True, help="Input cs parquet file")
-    parser.add_argument("-t", "--pip_threshold",  type=float, required=True, help="Pip threshold")
+    parser.add_argument("-s", "--study-id", required=True, help="Study ID")
+    parser.add_argument("-d", "--dataset", required=True, help="Dataset ID")
+    parser.add_argument("-p", "--parquet", required=True, help="Input CS parquet file")
+    parser.add_argument("-t", "--pip-threshold", type=float, required=True, help="PIP threshold")
 
     args = parser.parse_args()
 
-
-    dataset_id = args.dataset
+    study_id = args.study_id
+    dataset = args.dataset
     parquet = args.parquet
-    PIP_THRESHOLD = args.pip_threshold
+    pip_threshold = args.pip_threshold
 
-    if PIP_THRESHOLD <= 0.5 or PIP_THRESHOLD > 1:
-        raise ValueError("pip_threshold must be > 0.5 and <= 1 for strong/medium/weak bins.")
-    
-    print(f"Processing dataset: {dataset_id}")
+    if pip_threshold <= 0.5 or pip_threshold > 1:
+        raise ValueError("pip_threshold must be > 0.5 and <= 1.")
+
+    print(f"Processing study: {study_id}")
+    print(f"Processing dataset: {dataset}")
     print(f"Input file: {parquet}")
+    print(f"PIP threshold: {pip_threshold}")
 
-    df_cs, df_molecular_trait_id, summary = query_cs(parquet,PIP_THRESHOLD)
+    df_cs, df_molecular_trait_id, summary = query_cs(parquet, pip_threshold)
 
-    plot_all_cs(df_cs, dataset_id)
-    plot_cs_size(df_cs, dataset_id)
-    plot_cs_per_molecular_trait_id(df_molecular_trait_id, dataset_id)
+    plot_all_cs(df_cs, dataset)
+    plot_cs_size(df_cs, dataset)
+    plot_cs_per_molecular_trait_id(df_molecular_trait_id, dataset)
 
-    save_summary(summary, dataset_id, dataset_id)
-    save_cs_size_stats(df_cs, dataset_id)
-    save_molecular_trait_id_stats(df_molecular_trait_id, dataset_id)
+    save_summary(summary, study_id, dataset, pip_threshold, dataset)
+    save_cs_size_stats(df_cs, study_id, dataset, dataset)
+    save_molecular_trait_id_stats(df_molecular_trait_id, study_id, dataset, dataset)
 
     print("\nOutputs generated:")
-    print(f"- {dataset_id}_all_cs.png")
-    print(f"- {dataset_id}_cs_size.png")
-    print(f"- {dataset_id}_cs_per_molecular_trait_id.png")
-    print(f"- {dataset_id}_summary.tsv")
-    print(f"- {dataset_id}_cs_size_stats.tsv")
-    print(f"- {dataset_id}_cs_per_molecular_trait_id_stats.tsv")
+    print(f"- {dataset}_all_cs.png")
+    print(f"- {dataset}_cs_size.png")
+    print(f"- {dataset}_cs_per_molecular_trait_id.png")
+    print(f"- {dataset}_summary.tsv")
+    print(f"- {dataset}_cs_size_stats.tsv")
+    print(f"- {dataset}_cs_per_molecular_trait_id_stats.tsv")
 
 
 if __name__ == "__main__":
