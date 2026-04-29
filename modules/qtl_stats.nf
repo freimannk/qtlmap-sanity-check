@@ -1,7 +1,6 @@
 process sig_hits {
     tag "${study_id}_${dataset}"
-
-    conda "/gpfs/helios/home/a82371/.conda/envs/qtl_stats"
+    container='quay.io/kfkf33/qtl_stats:0.1.3'
 
     input:
     tuple val(study_id), path(src_dir), val(dataset), path(permutation_input_file)

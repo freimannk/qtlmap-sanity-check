@@ -1,7 +1,7 @@
 process cs_stats {
     tag "${dataset}-stats"
     container = 'quay.io/kfkf33/duckdb_plots:v1'
-    publishDir "${params.outdir}/cs_stats/plots", mode: 'copy', pattern: "*.png"
+    publishDir "${params.outdir}/cs_stats/plots/${study_id}", mode: 'copy', pattern: "*.png"
 
     input:
     tuple val(study_id), path(src_dir), val(dataset), path(cs_pq_file)

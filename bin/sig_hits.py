@@ -46,8 +46,6 @@ def main():
     df = df.dropna(subset=["p_beta"])
     df = df[df["p_beta"].between(0, 1)].copy()
 
-    # If there are multiple rows per molecular_trait_object_id,
-    # keep the strongest association before FDR correction.
     if "molecular_trait_object_id" in df.columns:
         df = (
             df.sort_values("p_beta")

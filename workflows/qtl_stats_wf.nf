@@ -55,23 +55,28 @@ workflow qtl_stats {
         }
 
 
-    sig_hits(dataset_ch)
-    sig_hits_by_study_ch = sig_hits.out.sig_hits_summary
+sig_hits(dataset_ch)
+sig_hits_by_study_ch = sig_hits.out.sig_hits_summary
     .map { study_id, dataset, summary_file ->
-        tuple(study_id, summary_file)
+        tuple(study_id, dataset, summary_file)
     }
     .groupTuple(by: 0)
-    .flatMap { study_id, summary_files ->
-        summary_files.collect { summary_file ->
-            tuple(study_id, summary_file)
+    .flatMap { study_id, datasets, summary_files ->
+
+        def paired = [datasets, summary_files]
+            .transpose()
+            .sort { a, b -> a[0] <=> b[0] }
+
+        paired.collect { dataset, summary_file ->
+            tuple(study_id, dataset, summary_file)
         }
     }
     .collectFile(
         keepHeader: true,
         skip: 1,
-        sort: true,
+        sort: false,
         storeDir: "${params.outdir}/qtl_stats"
-    ) { study_id, summary_file ->
+    ) { study_id, dataset, summary_file ->
         [ "${study_id}_significant_hits_summary.tsv", summary_file ]
     }
 

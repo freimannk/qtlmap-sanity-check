@@ -64,36 +64,44 @@ workflow credible_sets_stats {
     }
     .groupTuple(by: 0)
     .flatMap { study_id, datasets, tsvs ->
-        def out = []
-        for (int i = 0; i < tsvs.size(); i++) {
-            out << tuple(study_id, datasets[i], tsvs[i])
+
+        def paired = [datasets, tsvs]
+            .transpose()
+            .sort { a, b -> a[0] <=> b[0] }
+
+        paired.collect { dataset, tsv ->
+            tuple(study_id, dataset, tsv)
         }
-        return out
     }
     .collectFile(
         keepHeader: true,
         skip: 1,
+        sort: false,
         storeDir: "${params.outdir}/cs_stats"
     ) { study_id, dataset, tsv ->
         [ "${study_id}_cs_summary.tsv", tsv ]
     }
 
 
-cs_size_stats_by_study_ch = cs_stats.out.cs_size_stats
+    cs_size_stats_by_study_ch = cs_stats.out.cs_size_stats
     .map { study_id, dataset, tsv ->
         tuple(study_id, dataset, tsv)
     }
     .groupTuple(by: 0)
     .flatMap { study_id, datasets, tsvs ->
-        def out = []
-        for (int i = 0; i < tsvs.size(); i++) {
-            out << tuple(study_id, datasets[i], tsvs[i])
+
+        def paired = [datasets, tsvs]
+            .transpose()
+            .sort { a, b -> a[0] <=> b[0] }
+
+        paired.collect { dataset, tsv ->
+            tuple(study_id, dataset, tsv)
         }
-        return out
     }
     .collectFile(
         keepHeader: true,
         skip: 1,
+        sort: false,
         storeDir: "${params.outdir}/cs_stats"
     ) { study_id, dataset, tsv ->
         [ "${study_id}_cs_size_stats_summary.tsv", tsv ]
@@ -106,19 +114,22 @@ cs_size_stats_by_study_ch = cs_stats.out.cs_size_stats
     }
     .groupTuple(by: 0)
     .flatMap { study_id, datasets, tsvs ->
-        def out = []
-        for (int i = 0; i < tsvs.size(); i++) {
-            out << tuple(study_id, datasets[i], tsvs[i])
+
+        def paired = [datasets, tsvs]
+            .transpose()
+            .sort { a, b -> a[0] <=> b[0] }
+
+        paired.collect { dataset, tsv ->
+            tuple(study_id, dataset, tsv)
         }
-        return out
     }
     .collectFile(
         keepHeader: true,
         skip: 1,
+        sort: false,
         storeDir: "${params.outdir}/cs_stats"
     ) { study_id, dataset, tsv ->
         [ "${study_id}_cs_per_molecular_trait_id_stats_summary.tsv", tsv ]
     }
-
 
 }
